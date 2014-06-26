@@ -35,6 +35,10 @@
 
 #include <hector_exploration_planner/ExplorationPlannerConfig.h>
 
+#include <sensor_msgs/image_encodings.h>
+
+#include <stdlib.h>
+
 #define STRAIGHT_COST 100
 #define DIAGONAL_COST 141
 
@@ -71,7 +75,7 @@ void HectorExplorationPlanner::initialize(std::string name, costmap_2d::Costmap2
     return;
   }
 
-  ROS_INFO("[hector_exploration_planner] Initializing HectorExplorationPlanner");
+  //ROS_INFO("[hector_exploration_planner] Initializing HectorExplorationPlanner");
 
   // initialize costmaps
   this->costmap_ros_ = costmap_ros_in;
@@ -80,7 +84,11 @@ void HectorExplorationPlanner::initialize(std::string name, costmap_2d::Costmap2
   // initialize parameters
   ros::NodeHandle private_nh_("~/" + name);
   ros::NodeHandle nh;
+  visualization_pub_ = private_nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
+  frontier_local_map_pub_= private_nh_.advertise<nav_msgs::OccupancyGrid>("frontier_local_map", 1000);
   visualization_pub_ = private_nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
+  map_sub_ = nh.subscribe("omnirob_ros_mapper/map", 1, &HectorExplorationPlanner::globalMapCallback, this);
+  global_map_ = NULL;
 
   dyn_rec_server_.reset(new dynamic_reconfigure::Server<hector_exploration_planner::ExplorationPlannerConfig>());
 
@@ -1015,7 +1023,7 @@ bool HectorExplorationPlanner::findFrontiers(std::vector<geometry_msgs::PoseStam
     //}
   }
 
-  return true;
+  //return true;
 
   // value of the next blob
   int nextBlobValue = 1;
@@ -1138,9 +1146,9 @@ bool HectorExplorationPlanner::findFrontiers(std::vector<geometry_msgs::PoseStam
       marker.pose.position.y = wy;
       marker.pose.position.z = 0.0;
       marker.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
-      marker.scale.x = 0.2;
-      marker.scale.y = 0.2;
-      marker.scale.z = 0.2;
+      marker.scale.x = 1.2;
+      marker.scale.y = 1.2;
+      marker.scale.z = 1.2;
       marker.color.a = 1.0;
 
       if(frontier_is_valid){
@@ -1159,6 +1167,21 @@ bool HectorExplorationPlanner::findFrontiers(std::vector<geometry_msgs::PoseStam
   }
   return !frontiers.empty();
 }
+
+void HectorExplorationPlanner::globalMapCallback(const nav_msgs::OccupancyGridConstPtr& msg){
+  if (global_map_ != NULL ) {
+    free(global_map_);
+  }
+  global_map_width_ = msg->info.width;
+  global_map_height_ = msg->info.height;
+  int map_size = msg->info.height * msg->info.width;
+  global_map_ = (unsigned char*)malloc(sizeof(unsigned char) * map_size);
+  for(int i = 0; i < map_size; i++) {
+    global_map_[i] = msg->data[i];
+  }
+}
+    
+  
 
 bool HectorExplorationPlanner::findInnerFrontier(std::vector<geometry_msgs::PoseStamped> &innerFrontier){
   clearFrontiers();

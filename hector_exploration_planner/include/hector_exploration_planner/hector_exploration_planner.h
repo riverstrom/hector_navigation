@@ -86,9 +86,10 @@ public:
   
   float angleDifferenceWall(const geometry_msgs::PoseStamped &start, const geometry_msgs::PoseStamped &goal);
   bool exploreWalls(const geometry_msgs::PoseStamped &start, std::vector<geometry_msgs::PoseStamped> &goals);
+  
+  
 
 private:
-
   enum LastMode{
     FRONTIER_EXPLORE,
     INNER_EXPLORE
@@ -117,6 +118,7 @@ private:
   double getYawToUnknown(int point);
   bool isFrontierReached(int point);
   bool isSameFrontier(int frontier_point1,int frontier_point2);
+  void globalMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
 
   void getStraightPoints(int point, int points[]);
   void getDiagonalPoints(int point, int points[]);
@@ -129,11 +131,13 @@ private:
   int downright(int point);
   int down(int point);
   int downleft(int point);
-
+  
+  ros::Subscriber map_sub_;
   ros::Publisher visualization_pub_;
   ros::ServiceClient path_service_client_;
   costmap_2d::Costmap2DROS* costmap_ros_;
   costmap_2d::Costmap2D* costmap_;
+  
 
   const unsigned char* occupancy_grid_array_;
   boost::shared_array<unsigned int> exploration_trans_array_;
@@ -148,6 +152,10 @@ private:
   unsigned int map_width_;
   unsigned int map_height_;
   unsigned int num_map_cells_;
+  unsigned char* global_map_;
+  unsigned int global_map_width_;
+  unsigned int global_map_height_;
+  
 
   // Parameters
   bool p_plan_in_unknown_;
