@@ -134,6 +134,8 @@ private:
   
   ros::Subscriber map_sub_;
   ros::Publisher visualization_pub_;
+  ros::Publisher frontier_local_map_pub_;
+  ros::Publisher frontier_local_map_image_pub_;
   ros::ServiceClient path_service_client_;
   costmap_2d::Costmap2DROS* costmap_ros_;
   costmap_2d::Costmap2D* costmap_;

@@ -86,7 +86,7 @@ void HectorExplorationPlanner::initialize(std::string name, costmap_2d::Costmap2
   ros::NodeHandle nh;
   visualization_pub_ = private_nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
   frontier_local_map_pub_= private_nh_.advertise<nav_msgs::OccupancyGrid>("frontier_local_map", 1000);
-  visualization_pub_ = private_nh_.advertise<visualization_msgs::Marker>("visualization_marker", 0);
+  frontier_local_map_image_pub_= private_nh_.advertise<sensor_msgs::Image>("frontier_local_map_image", 1000);
   map_sub_ = nh.subscribe("omnirob_ros_mapper/map", 1, &HectorExplorationPlanner::globalMapCallback, this);
   global_map_ = NULL;
 
@@ -1163,7 +1163,94 @@ bool HectorExplorationPlanner::findFrontiers(std::vector<geometry_msgs::PoseStam
       marker.lifetime = ros::Duration(5,0);
       visualization_pub_.publish(marker);
     }
-
+    
+    sensor_msgs::Image* frontier_local_map_image_msg = new sensor_msgs::Image;
+    
+    costmap_2d::Costmap2D frontier_local_map;
+    costmap_ros_->getCostmapWindowCopy(wx, wy, 15, 15, frontier_local_map);
+    
+    unsigned local_map_height = 512;
+    unsigned local_map_width = 512;
+    nav_msgs::OccupancyGrid* frontier_local_map_msg = new nav_msgs::OccupancyGrid;
+    frontier_local_map_msg->header.frame_id = "map";
+    frontier_local_map_msg->header.stamp = ros::Time::now() + ros::Duration(0, id);
+    //frontier_local_map_msg->info.height = frontier_local_map.getSizeInCellsY();
+    //frontier_local_map_msg->info.width = frontier_local_map.getSizeInCellsX();
+    frontier_local_map_msg->info.height = local_map_height;
+    frontier_local_map_msg->info.width = local_map_width;
+    frontier_local_map_msg->info.resolution = frontier_local_map.getResolution();
+    unsigned data_size = local_map_height * local_map_width;
+    frontier_local_map_msg->data.resize(data_size);
+    
+    frontier_local_map_image_msg->header.frame_id = "map";
+    frontier_local_map_image_msg->header.stamp = ros::Time::now() + ros::Duration(0, id);
+//     frontier_local_map_image_msg->height = frontier_local_map.getSizeInCellsY();
+//     frontier_local_map_image_msg->width = frontier_local_map.getSizeInCellsX();
+    frontier_local_map_image_msg->height = local_map_height;
+    frontier_local_map_image_msg->width = local_map_width;
+    frontier_local_map_image_msg->encoding = sensor_msgs::image_encodings::MONO8;
+    //frontier_local_map_image_msg->step = frontier_local_map_image_msg->width;
+    frontier_local_map_image_msg->step = local_map_width;
+    frontier_local_map_image_msg->data.resize(data_size);
+    
+//     for(unsigned i = 0; i < data_size; i++)
+//     {
+//       frontier_local_map_msg->data[i] = frontier_local_map.getCharMap()[i];
+//     }
+    //for(unsigned row = 0; row < frontier_local_map.getSizeInCellsY(); row++)
+    unsigned idx = 0;
+    ROS_DEBUG("Pre loop x %i y %i  rowl %i, coll %i", x, y, (y - (local_map_height / 2)), (y + (local_map_height / 2)));
+    //for(int row = -200; row < 200; row++) ROS_INFO("In row: row %i", row);
+    int rowl = (y - ((int)local_map_height / 2));
+    int rowu = (y + ((int)local_map_height / 2));
+    int coll = (x - ((int)local_map_width / 2));
+    int colu = (x + ((int)local_map_width / 2));
+    //for(int row = int ; row < (y + ((int)local_map_height / 2)); row++)
+    for(int row = rowl; row < rowu; row++)
+    {
+      //ROS_INFO("In row: row %i", row);
+      //for(unsigned col = 0; col < frontier_local_map.getSizeInCellsX(); col++)
+      //for(int col = (x - ((int)local_map_width / 2)); col < (x + ((int)local_map_width / 2)); col++)
+      for(int col = coll; col < colu; col++)
+      {
+	//ROS_INFO("In loop: row %i col %i, global_map_height_ %i, global_map_width_ %i", row, col, global_map_height_, global_map_width_);
+	//unsigned cell = frontier_local_map.getCharMap()[row * frontier_local_map.getSizeInCellsX() + col];
+	if(row < 0 || row >= global_map_height_ || col < 0 || col >= global_map_width_)
+	{
+	  frontier_local_map_msg->data[idx] = -1;
+	  frontier_local_map_image_msg->data[(local_map_height - (row - rowl) - 1) * local_map_width + (col - coll)] = 217;
+	} else {
+	  int cell = global_map_[row * global_map_width_ + col];
+	  //ROS_INFO("Cell: %i", cell);
+	  //int cell = occupancy_grid_array_[costmap_->getIndex(col,row)];
+	  //unsigned cell = frontier_local_map.getCharMap()[idx];
+	  frontier_local_map_msg->data[idx] = cell;
+	  if (cell == 0)
+	  //if (true)
+	  {
+	    //frontier_local_map_image_msg->data[(frontier_local_map.getSizeInCellsY() - row - 1) * frontier_local_map.getSizeInCellsX() + col] = 254;
+	    //frontier_local_map_msg->data[idx] = 0;
+	    frontier_local_map_image_msg->data[(local_map_height - (row - rowl) - 1) * local_map_width + (col - coll)] = 254;
+	  }
+	  else if (cell >= 254 && cell != -1)
+	  { 
+	    //frontier_local_map_image_msg->data[(frontier_local_map.getSizeInCellsY() - row - 1) * frontier_local_map.getSizeInCellsX() + col] = 0;
+	    //frontier_local_map_msg->data[idx] = 100;
+	    frontier_local_map_image_msg->data[(local_map_height - (row - rowl) - 1) * local_map_width + (col - coll)] = 217;
+	  }
+	  else
+	  {
+	    //frontier_local_map_image_msg->data[(frontier_local_map.getSizeInCellsY() - row - 1) * frontier_local_map.getSizeInCellsX() + col] = 217;
+	    //frontier_local_map_msg->data[idx] = -1;
+	    frontier_local_map_image_msg->data[(local_map_height - (row - rowl) - 1) * local_map_width + (col - coll)] = 0;
+	  }
+	}
+	idx++;
+      }
+    }
+    frontier_local_map_pub_.publish(*frontier_local_map_msg);
+    frontier_local_map_image_pub_.publish(*frontier_local_map_image_msg);
+    //sleep(1);
   }
   return !frontiers.empty();
 }
