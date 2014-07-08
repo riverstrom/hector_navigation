@@ -1250,7 +1250,7 @@ bool HectorExplorationPlanner::findFrontiers(std::vector<geometry_msgs::PoseStam
     }
     frontier_local_map_pub_.publish(*frontier_local_map_msg);
     frontier_local_map_image_pub_.publish(*frontier_local_map_image_msg);
-    //sleep(1);
+    sleep(0.1);
   }
   return !frontiers.empty();
 }
