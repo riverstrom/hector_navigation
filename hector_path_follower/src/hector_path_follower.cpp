@@ -44,16 +44,16 @@ namespace pose_follower {
     node_private.param("k_trans", K_trans_, 2.0);
     node_private.param("k_rot", K_rot_, 2.0);
 
-    node_private.param("tolerance_trans", tolerance_trans_, 0.1);
-    node_private.param("tolerance_rot", tolerance_rot_, 0.2);
-    node_private.param("tolerance_timeout", tolerance_timeout_, 0.5);
+    node_private.param("tolerance_trans", tolerance_trans_, 0.6);//0.1
+    node_private.param("tolerance_rot", tolerance_rot_, 0.4);//0.2
+    node_private.param("tolerance_timeout", tolerance_timeout_, 1.5);//0.5
 
     node_private.param("holonomic", holonomic_, false);
 
     node_private.param("samples", samples_, 10);
 
-    node_private.param("max_vel_lin", max_vel_lin_, 0.9);
-    node_private.param("max_vel_th", max_vel_th_, 1.4);
+    node_private.param("max_vel_lin", max_vel_lin_, 1.9);//0.9
+    node_private.param("max_vel_th", max_vel_th_, 2.4);
 
     node_private.param("min_vel_lin", min_vel_lin_, 0.1);
     node_private.param("min_vel_th", min_vel_th_, 0.0);
