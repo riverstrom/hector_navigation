@@ -134,6 +134,7 @@ private:
   
   ros::Subscriber map_sub_;
   ros::Publisher visualization_pub_;
+  ros::Publisher frontiers_pub_;
   ros::Publisher frontier_local_map_pub_;
   ros::Publisher frontier_local_map_image_pub_;
   ros::ServiceClient path_service_client_;

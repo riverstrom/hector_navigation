@@ -42,7 +42,7 @@ public:
 
     path_follower_.initialize(&tfl_);
 
-    exploration_plan_generation_timer_ = nh.createTimer(ros::Duration(20.0), &SimpleExplorationController::timerPlanExploration, this, false );
+    exploration_plan_generation_timer_ = nh.createTimer(ros::Duration(1.0), &SimpleExplorationController::timerPlanExploration, this, false );
     cmd_vel_generator_timer_ = nh.createTimer(ros::Duration(0.1), &SimpleExplorationController::timerCmdVelGeneration, this, false );
 
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);

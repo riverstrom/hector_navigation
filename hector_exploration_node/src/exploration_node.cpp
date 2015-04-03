@@ -31,6 +31,9 @@
 #include <hector_exploration_planner/hector_exploration_planner.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <hector_nav_msgs/GetRobotTrajectory.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/GetPlan.h>
+
 
 class SimpleExplorationPlanner
 {
@@ -45,6 +48,8 @@ public:
     planner_->initialize("hector_exploration_planner",costmap_2d_ros_);
 
     exploration_plan_service_server_ = nh.advertiseService("get_exploration_path", &SimpleExplorationPlanner::explorationServiceCallback, this);
+    make_plan_service_server_ = nh.advertiseService("get_plan", &SimpleExplorationPlanner::makePlanServiceCallback, this);
+    frontiers_service_server_ = nh.advertiseService("get_frontiers", &SimpleExplorationPlanner::frontiersServiceCallback, this);
 
     exploration_plan_pub_ = nh.advertise<nav_msgs::Path>("exploration_path",2);
   }
@@ -71,9 +76,55 @@ public:
       return true;
     }
 
+  bool makePlanServiceCallback(nav_msgs::GetPlan::Request  &req,
+                               nav_msgs::GetPlan::Response &res )
+    {
+      ROS_INFO("Exploration Service called");
+
+//       tf::Stamped<tf::Pose> robot_pose_tf;
+//       costmap_2d_ros_->getRobotPose(robot_pose_tf);
+// 
+//       geometry_msgs::PoseStamped pose;
+//       tf::poseStampedTFToMsg(robot_pose_tf, pose);
+      planner_->makePlan(req.start, req.goal, res.plan.poses);
+      res.plan.header.frame_id = "map";
+      res.plan.header.stamp = ros::Time::now();
+
+      if (exploration_plan_pub_.getNumSubscribers() > 0)
+      {
+        exploration_plan_pub_.publish(res.plan);
+      }
+
+      return true;
+    }
+
+  bool frontiersServiceCallback(hector_nav_msgs::GetRobotTrajectory::Request  &req,
+                                  hector_nav_msgs::GetRobotTrajectory::Response &res )
+    {
+      ROS_INFO("Frontier Service called");
+
+      std::vector<geometry_msgs::PoseStamped> frontiers;
+      if(!planner_->findFrontiers(frontiers)) {
+        ROS_ERROR("findFrontiers returned 0 frontiers.");
+        return false;
+      }
+      res.trajectory.header.frame_id = "map";
+      res.trajectory.header.stamp = ros::Time::now();
+      res.trajectory.poses = frontiers;
+
+//       if (exploration_plan_pub_.getNumSubscribers() > 0)
+//       {
+//         exploration_plan_pub_.publish(res.trajectory);
+//       }
+
+      return true;
+    }
+
 protected:
   hector_exploration_planner::HectorExplorationPlanner* planner_;
   ros::ServiceServer exploration_plan_service_server_;
+  ros::ServiceServer frontiers_service_server_;
+  ros::ServiceServer make_plan_service_server_;
   ros::Publisher exploration_plan_pub_;
   costmap_2d::Costmap2DROS* costmap_2d_ros_;
   tf::TransformListener tfl_;
