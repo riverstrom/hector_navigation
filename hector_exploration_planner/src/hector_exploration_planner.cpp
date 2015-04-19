@@ -37,6 +37,7 @@
 #include <hector_exploration_planner/ExplorationPlannerConfig.h>
 
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/Image.h>
 
 #include <stdlib.h>
 
