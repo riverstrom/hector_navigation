@@ -11,7 +11,7 @@ global_costmap:
   inscribed_radius: 0.15
   circumscribed_radius: 0.15
 
-  global_frame: /odom
+  global_frame: /map
   robot_base_frame: /base_link
   transform_tolerance: 0.5
   update_frequency: 5.0
